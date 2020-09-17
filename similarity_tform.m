@@ -64,6 +64,20 @@ switch flag
         % transformation
         T = trans([tx ty tz]);
         
+    case 'rotate'
+        
+        % rotational components
+        alpha = x(1);
+        beta = x(2);
+        gamma = x(3);
+        
+        % transformation matrix
+        Tx = rotx(alpha);
+        Ty = roty(beta);
+        Tz = rotz(gamma);
+        
+        T = Tx * Ty * Tz;
+        
     case 'rigid'
         
         % translational components
