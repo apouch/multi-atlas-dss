@@ -121,6 +121,7 @@ def main():
     
     C3D_path = '/usr/local/bin'
     GREEDY_path = '/usr/local/bin'
+    JLF_path = '/home/gormanlab/build/ANTs/bin/jointfusion'
     
     WDIR = sys.argv[1]
     fn_img_targ = sys.argv[2]
@@ -133,6 +134,9 @@ def main():
     
     atlas_set = pd.read_csv(fn_atlas_list,sep=',',header=None)
     atlas_set.columns = ['fn_img','fn_seg','fn_mask','fn_coords']
+    
+    str_atlas_img_rs = ''
+    str_atlas_labels_rs = ''
     
     for i in range(0, len(atlas_set)):
         
@@ -215,6 +219,17 @@ def main():
                           ' -rm ' + fn_img_atlas_aff_rs + ' ' + fn_img_atlas_def_rs + ''
                           ' -r ' + fn_regout_deform)
         subprocess.call(str_def_rs_img,shell=True)
+        
+        str_atlas_img_rs = str_atlas_img_rs + ' ' + fn_img_atlas_def_rs
+        str_atlas_labels_rs = str_atlas_labels_rs + ' ' + fn_seg_targ
+    
+    fn_seg_consensus = WDIR + '/seg_atlas_consensus.nii.gz'
+    str_jointfusion = (JLF_path + '/./jointfusion 3 1 -g' + str_atlas_img_rs + ''
+                       ' -tg ' + fn_img_targ + ' -l' + str_atlas_labels_rs + ''
+                       ' -m Joint[0.1,1] -rp 4x4x4 -rs 4x4x4' 
+                       ' ' + fn_seg_consensus)
+    subprocess.call(str_jointfusion,shell=True)
+    
 
 if __name__ == "__main__":
     main()
