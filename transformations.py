@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 24 11:23:41 2020
+This script defines an optimization of a similarity transform between two sets
+of landmarks.
 
-@author: alison
 """
 
 import numpy as np
