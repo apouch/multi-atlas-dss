@@ -136,7 +136,7 @@ if __name__ == "__main__":
       
     pool = mp.Pool(mp.cpu_count())
     print("Number of processors: ", mp.cpu_count())
-    results = [pool.apply_sync(atlas_reg, args = (i, WDIR, fn_img_targ, coords_targ, atlas_set)) for i in range(0,len(atlas_set))]
+    results = [pool.apply(atlas_reg, args = (i, WDIR, fn_img_targ, coords_targ, atlas_set)) for i in range(0,len(atlas_set))]
     pool.close()
     '''  
     jobs = []
