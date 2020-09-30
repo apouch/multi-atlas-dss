@@ -30,9 +30,13 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
     fn_coords_atlas = atlas_set['fn_coords'][i]
 
     # physical coordinates in landmark image
-    coords_atlas = np.genfromtxt(fn_coords_atlas)
+    #coords_atlas = np.genfromtxt(fn_coords_atlas,delimiter=',')
+    #coords_atlas = np.concatenate((np.transpose(coords_atlas[:, 0:3:1]),
+    #                               np.ones((1,5))))
+    coords_atlas = pd.read_csv(fn_coords_atlas,header=None)
+    coords_atlas = coords_atlas.to_numpy()
     coords_atlas = np.concatenate((np.transpose(coords_atlas[:, 0:3:1]),
-                                   np.ones((1,5))))
+                                 np.ones((1,5))))
 
     # landmark-based tform for initialization
     T = tform.similarity_tform(coords_targ,coords_atlas)
@@ -113,7 +117,11 @@ if __name__ == "__main__":
     fn_atlas_list = sys.argv[4]
     
     # physical landmarks in target image
-    coords_targ = np.genfromtxt(fn_coords_targ,delimiter=' ')
+    #coords_targ = np.genfromtxt(fn_coords_targ,delimiter=',')
+    #coords_targ = np.concatenate((np.transpose(coords_targ[:, 0:3:1]),
+    #                             np.ones((1,5))))
+    coords_targ = pd.read_csv(fn_coords_targ,header=None)
+    coords_targ = coords_targ.to_numpy()
     coords_targ = np.concatenate((np.transpose(coords_targ[:, 0:3:1]),
                                  np.ones((1,5))))
     
@@ -161,5 +169,5 @@ if __name__ == "__main__":
                        ' -m Joint[0.1,1] -rp 4x4x4 -rs 4x4x4' 
                        ' ' + fn_seg_consensus)
     print('This is the joint label fusion step')
-    subprocess.call(str_jointfusion,shell=True)
+    #subprocess.call(str_jointfusion,shell=True)
     
