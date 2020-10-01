@@ -7,7 +7,7 @@ This script fits a cm-rep template to a target image
 """
 
 import sys
-import multi_atlas
+import transformations as tform
 import numpy as np
 import pandas as pd
 import subprocess
@@ -22,8 +22,8 @@ fn_coords_targ = sys.argv[3]
 fn_template = sys.argv[4]
 '''
 
-WDIR = '/Volumes/stark/multi-atlas-test'
-fn_seg_targ = '/Volumes/stark/multi-atlas-test/akita/seg_atlas_consensus.nii.gz'
+WDIR = '/Volumes/stark/multi-atlas-test/akita/nrml11'
+fn_seg_targ = '/Volumes/stark/multi-atlas-test/akita/nrml11/seg_atlas_consensus.nii.gz'
 fn_coords_targ = '/Volumes/stark/ATLASES_MV/img05_nrml11_landmarks_coords.csv'
 fn_template = '/Volumes/stark/ATLASES_MV/mv_template/medialtemplate_closed2_filenames.csv'
 
@@ -42,7 +42,7 @@ coords_tmpl = np.genfromtxt(fn_tmpl_coords,delimiter=' ')
 coords_tmpl = np.concatenate((np.transpose(coords_tmpl[:, 0:3:1]),
                                np.ones((1,5))))
 
-T = multi_atlas.similarity_tform(coords_targ,coords_tmpl)
+T = tform.similarity_tform(coords_targ,coords_tmpl)
 Tinv = np.linalg.inv(T)
 
 fn_affine_init = WDIR + '/affine_init_tmpl.txt'
@@ -69,12 +69,11 @@ str_def_rs_seg = (GREEDY_path + '/greedy -d 3'
                   ' -rf ' + fn_seg_targ + ''
                   ' -rs ' + fn_tmpl_bnd + ' ' + fn_tmpl_bnd_rs + ''
                   ' -r ' + fn_regout_deform  + ' ' + fn_affine_init_inv)
-#subprocess.call(str_def_rs_seg,shell=True)
+subprocess.call(str_def_rs_seg,shell=True)
 
-#                  ' -ri LINEAR '
-#                  ' -rs ' + fn_tmpl_bnd + ' ' + fn_tmpl_bnd_rs + ''
-#                  ' -rm ' + fn_tmpl_seg + ' ' + fn_tmpl_seg_rs + ''
 
+
+'''
 reader = vtk.vtkPolyDataReader()
 reader.SetFileName(fn_tmpl_bnd)
 reader.ReadAllScalarsOn()
@@ -106,5 +105,5 @@ writer = vtk.vtkPolyDataWriter()
 writer.SetFileName(fn_test)
 writer.SetInputData(data_rs)
 writer.Write()
-
+'''
         
