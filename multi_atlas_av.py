@@ -17,7 +17,7 @@ GREEDY_PATH = '/usr/local/bin'
 JLF_PATH = '/home/gormanlab/build/ANTs/bin/jointfusion'
 FLAG_MULTIPROC=True
 
-def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
+def atlas_registration(i, WDIR, fn_img_targ, coords_targ, fn_mask_targ, atlas_set):
 
     # numeric tag for output files related to this atlas
     tag = str(i).zfill(2)
@@ -49,12 +49,12 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
     np.savetxt(fn_affine_init_inv,T,delimiter=' ',fmt='%1.5f')
 
     # target (fixed) image mask for computing similarity metric
-    fn_mask_targ = WDIR + '/mask' + tag + '.nii.gz'
-    str_aff_rs_mask = (C3D_PATH + '/c3d -int 0 ' + fn_img_targ + ' ' 
-                                 '' + fn_mask_atlas + ''
-                                 ' -reslice-matrix ' + fn_affine_init + ''
-                                 ' -o ' + fn_mask_targ + '')
-    subprocess.call(str_aff_rs_mask,shell=True)
+    #fn_mask_targ = WDIR + '/mask' + tag + '.nii.gz'
+    #str_aff_rs_mask = (C3D_PATH + '/c3d -int 0 ' + fn_img_targ + ' ' 
+    #                             '' + fn_mask_atlas + ''
+    #                             ' -reslice-matrix ' + fn_affine_init + ''
+    #                             ' -o ' + fn_mask_targ + '')
+    #subprocess.call(str_aff_rs_mask,shell=True)
     
     # masking of the target (fixed) image
     fn_img_targ_masked = WDIR + '/img_targ_masked.nii.gz'
@@ -114,6 +114,7 @@ if __name__ == "__main__":
     WDIR = sys.argv[1]
     fn_img_targ = sys.argv[2]
     fn_coords_targ = sys.argv[3]
+    fn_mask_targ = sys.argv[4]
     fn_atlas_list = sys.argv[4]
     
     # physical landmarks in target image
@@ -144,7 +145,8 @@ if __name__ == "__main__":
         jobs = []
         for i in range(0,len(atlas_set)):
             p = mp.Process(target=atlas_registration, 
-                           args=(i,WDIR, fn_img_targ, coords_targ, atlas_set,))
+                           args=(i,WDIR, fn_img_targ, coords_targ, 
+                                 fn_mask_targ, atlas_set))
             jobs.append(p)
             p.start()            
         for p in jobs:
@@ -153,7 +155,8 @@ if __name__ == "__main__":
         pool = mp.Pool(mp.cpu_count())
         print("Number of processors: ", mp.cpu_count())
         results = [pool.apply_async(atlas_registration, 
-                              args = (i, WDIR, fn_img_targ, coords_targ, atlas_set))
+                              args = (i, WDIR, fn_img_targ, coords_targ,
+                                      fn_mask_targ,atlas_set))
                                 for i in range(0,len(atlas_set))]
         pool.close()
         pool.join()

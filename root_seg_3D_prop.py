@@ -9,6 +9,8 @@ Created on Thu Oct  1 13:38:02 2020
 import subprocess 
 import nibabel as nib
 import multiprocessing as mp
+import pandas as pd
+import numpy as np
 import time
 
 C3D_PATH = '/usr/local/bin'
@@ -60,20 +62,37 @@ if __name__ == "__main__":
     
     start = time.time()
 
-    WDIR = '/Volumes/stark/aortic-root-test/test'
-    fn_img_rot = '/Volumes/stark/aortic-root-test/img07_tav06_rot.nii.gz'
-    fn_seg_rot = '/Volumes/stark/aortic-root-test/seg07_tav06_slice110fill.nii.gz'
+    WDIR = '/Volumes/stark/multi-atlas-test/tav11-masktest/testout'
+    fn_img_rot = '/Volumes/stark/multi-atlas-test/tav11-masktest/img21_tav11_rot.nii.gz'
+    fn_seg_rot = '/Volumes/stark/multi-atlas-test/tav11-masktest/seg_slice128.nii.gz'
+    fn_vox_rot = '/Volumes/stark/multi-atlas-test/tav11-masktest/landmark_vox_rot.csv'
+    fn_sl_vox_rot = '/Volumes/stark/multi-atlas-test/tav11-masktest/segslice_vox_rot.csv'
+    fn_tform = '/Volumes/stark/multi-atlas-test/tav11-masktest/img21_tav11_tform.txt'
     
+    '''
     seg_lev = 109
     stj_lev = 157
     vaj_lev = 73
+    '''
+    
+    vox_targ = pd.read_csv(fn_vox_rot,header=None,sep='\s+')
+    vox_targ = vox_targ.to_numpy()
+    stj_lev = int(np.ceil(vox_targ[0,2]))
+    vaj_lev = int(np.ceil(vox_targ[4,2]))
+    
+    slice_vox = pd.read_csv(fn_sl_vox_rot,header=None,sep='\s+')
+    slice_vox = slice_vox.to_numpy()
+    seg_lev = int(np.ceil(slice_vox[0,2]))
     
     # number of slices and spacing in 3D image
     seg = nib.load(fn_seg_rot)
     nslices = seg.shape[2]
+    
+    '''
     dx = str(seg.affine[0,0])
     dy = str(seg.affine[1,1])
     dz = str(seg.affine[2,2])
+    '''
     
     # slice image along z-axis
     strc_slice = (C3D_PATH + '/c3d ' + fn_img_rot + ' -slice z 0:-1'
@@ -97,11 +116,28 @@ if __name__ == "__main__":
     for p in jobs:
         p.join()
             
-    fn_segvol = WDIR + '/seg_volume.nii.gz'
-    strc_segvol = (C3D_PATH + '/c3d ' + WDIR + '/seg_slice*.nii.gz -tile z'
-                   ' -spacing ' + dx + 'x' + dy + 'x' + dz + 'mm'
-                   ' -smooth 1mm -thresh 0.5 inf 1 0 -o ' + fn_segvol + '')
+    fn_segvol = WDIR + '/seg_volume_rot.nii.gz'
+    #strc_segvol = (C3D_PATH + '/c3d ' + WDIR + '/seg_slice*.nii.gz -tile z'
+    #               ' -spacing ' + dx + 'x' + dy + 'x' + dz + 'mm'
+    #               ' -smooth 1mm -thresh 0.5 inf 1 0 -o ' + fn_segvol + '')
+    strc_segvol = (C3D_PATH + '/c3d ' + WDIR + '/seg_slice*.nii.gz -tile z' 
+                   ' -smooth 1mm -thresh 0.5 inf 1 0 '
+                   ' -o ' + fn_segvol)
+    strc_copytform = (C3D_PATH + '/c3d ' + fn_segvol + ' ' 
+                      '' + fn_img_rot + ' -copy-transform -o ' + fn_segvol)
     subprocess.call(strc_segvol,shell=True)
+    subprocess.call(strc_copytform,shell=True)
+    
+    fn_tform_inv = WDIR + '/tform_inv.txt'
+    strc_tforminv = (C3D_PATH + '/c3d_affine_tool -itk ' + fn_tform_inv + ''
+                     ' -inv -oitk ' + fn_tform_inv)
+    subprocess.call(strc_tforminv,shell=True)
+    
+    fn_segvol_rs = WDIR + '/seg_volume_rs.nii.gz'
+    strc_segvol_rs = (C3D_PATH + '/c3d -int 0 ' + fn_img_rot + ''
+                      ' ' + fn_segvol + ' -reslice-itk ' + fn_tform_inv + ''
+                      ' -o ' + fn_segvol_rs)
+    subprocess.call(strc_segvol_rs,shell=True)
     
     print('Total time: ', time.time()-start, 'seconds')
         
