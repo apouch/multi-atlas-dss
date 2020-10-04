@@ -69,75 +69,106 @@ if __name__ == "__main__":
     fn_sl_vox_rot = '/Volumes/stark/multi-atlas-test/tav11-masktest/segslice_vox_rot.csv'
     fn_tform = '/Volumes/stark/multi-atlas-test/tav11-masktest/img21_tav11_tform.txt'
     
-    '''
-    seg_lev = 109
-    stj_lev = 157
-    vaj_lev = 73
-    '''
+    # subdirectory in the working directory to store 2D data
+    WDIR_2D = WDIR + '/slices'
+    strc_subdir = ('mkdir -p ' + WDIR_2D)
+    subprocess.call(strc_subdir,shell=True)
     
-    vox_targ = pd.read_csv(fn_vox_rot,header=None,sep='\s+')
-    vox_targ = vox_targ.to_numpy()
-    stj_lev = int(np.ceil(vox_targ[0,2]))
-    vaj_lev = int(np.ceil(vox_targ[4,2]))
-    
-    slice_vox = pd.read_csv(fn_sl_vox_rot,header=None,sep='\s+')
-    slice_vox = slice_vox.to_numpy()
-    seg_lev = int(np.ceil(slice_vox[0,2]))
-    
-    # number of slices and spacing in 3D image
+    # image spacing and voxel-to-physical transformation
     seg = nib.load(fn_seg_rot)
     nslices = seg.shape[2]
+    img_affine = seg.affine
     
-    '''
-    dx = str(seg.affine[0,0])
-    dy = str(seg.affine[1,1])
-    dz = str(seg.affine[2,2])
-    '''
+    # transformation applied by user
+    fn_tform_mat = WDIR + '/img_tform.mat'
+    strc_itk2mat = (C3D_PATH + '/c3d_affine_tool -itk ' + fn_tform + ''
+                    ' -o ' + fn_tform_mat)
+    subprocess.call(strc_itk2mat,shell=True)
+    tform = pd.read_csv(fn_tform_mat,header=None,sep='\s+')
+    tform = tform.to_numpy()
     
-    # slice image along z-axis
+    # inverse of transformation applied by user
+    fn_tform_inv = WDIR + '/img_tform_inv.txt'
+    strc_tforminv = (C3D_PATH + '/c3d_affine_tool -itk ' + fn_tform + ''
+                     ' -inv -o ' + fn_tform_inv)
+    subprocess.call(strc_tforminv,shell=True)
+    
+    # level of STJ and VAJ (voxel coordinate) in rotated image
+    vox_targ_rot = pd.read_csv(fn_vox_rot,header=None,sep='\s+')
+    vox_targ_rot = vox_targ_rot.to_numpy() - 1
+    vox_targ_rot = np.concatenate((np.transpose(vox_targ_rot[:, 0:3:1]),
+                               np.ones((1,5))))
+    stj_lev = int(np.ceil(vox_targ_rot[2,0]))
+    vaj_lev = int(np.ceil(vox_targ_rot[2,4]))
+    
+    # level of 2D reference segmentation (voxel coordinate) in rotated image
+    slice_vox_rot = pd.read_csv(fn_sl_vox_rot,header=None,sep='\s+')
+    slice_vox_rot = slice_vox_rot.to_numpy() - 1
+    seg_lev = int(np.ceil(slice_vox_rot[0,2]))
+    
+    # physical landmark coordinates in the rotated image
+    coords_targ_rot = np.matmul(img_affine,vox_targ_rot)
+    
+    # physical landmark coordinates in original image
+    fn_coords_targ = WDIR + '/landmarks_targ.csv'
+    coords_targ = np.transpose(np.matmul(tform,coords_targ_rot))
+    coords_targ = coords_targ[:, 0:3:1]
+    np.savetxt(fn_coords_targ,coords_targ,delimiter=' ',fmt='%1.5f')
+   
+    # slice rotated image along z-axis
     strc_slice = (C3D_PATH + '/c3d ' + fn_img_rot + ' -slice z 0:-1'
-                  + ' -oo ' + WDIR + '/img_slice%03d.nii.gz')
+                  + ' -oo ' + WDIR_2D + '/img_slice%03d.nii.gz')
     subprocess.call(strc_slice,shell=True)
     
     # slice 3D segmentation at the level of the 2D reference slice
     seg_lev_str = str(seg_lev).zfill(3)
-    fn_seg_ref = WDIR + '/seg_slice' + seg_lev_str + '.nii.gz'
+    fn_seg_ref = WDIR_2D + '/seg_slice' + seg_lev_str + '.nii.gz'
     strc_seg_slice = (C3D_PATH + '/c3d ' + fn_seg_rot + ' -slice z' 
                       ' ' + seg_lev_str + ' -oo ' + fn_seg_ref)
     subprocess.call(strc_seg_slice,shell=True)
     
-    # register reference slice to others in the series
+    # register reference slice to others in the 3D stack
     jobs = []
     for i in range(0,nslices):
         p = mp.Process(target=slice_registration,
-                       args=(i,WDIR,fn_seg_ref,seg_lev,stj_lev,vaj_lev))
+                       args=(i,WDIR_2D,fn_seg_ref,seg_lev,stj_lev,vaj_lev))
         jobs.append(p)
         p.start()
     for p in jobs:
         p.join()
             
+    # create a 3D segmentation by tiling 2D segmentations
     fn_segvol = WDIR + '/seg_volume_rot.nii.gz'
-    #strc_segvol = (C3D_PATH + '/c3d ' + WDIR + '/seg_slice*.nii.gz -tile z'
-    #               ' -spacing ' + dx + 'x' + dy + 'x' + dz + 'mm'
-    #               ' -smooth 1mm -thresh 0.5 inf 1 0 -o ' + fn_segvol + '')
-    strc_segvol = (C3D_PATH + '/c3d ' + WDIR + '/seg_slice*.nii.gz -tile z' 
+    strc_segvol = (C3D_PATH + '/c3d ' + WDIR_2D + '/seg_slice*.nii.gz -tile z' 
                    ' -smooth 1mm -thresh 0.5 inf 1 0 '
                    ' -o ' + fn_segvol)
-    strc_copytform = (C3D_PATH + '/c3d ' + fn_segvol + ' ' 
-                      '' + fn_img_rot + ' -copy-transform -o ' + fn_segvol)
     subprocess.call(strc_segvol,shell=True)
+    
+    # copy transform (header) from rotated image to segmentation
+    strc_copytform = (C3D_PATH + '/c3d ' + fn_img_rot + '' 
+                      ' ' + fn_segvol + ' -copy-transform -o ' + fn_segvol)
+
     subprocess.call(strc_copytform,shell=True)
     
-    fn_tform_inv = WDIR + '/tform_inv.txt'
-    strc_tforminv = (C3D_PATH + '/c3d_affine_tool -itk ' + fn_tform_inv + ''
-                     ' -inv -oitk ' + fn_tform_inv)
-    subprocess.call(strc_tforminv,shell=True)
-    
-    fn_segvol_rs = WDIR + '/seg_volume_rs.nii.gz'
+    # create a dilated mask of the rotated segmentation
+    fn_segvol_dil = WDIR + '/seg_volume_rot_dil.nii.gz'
+    strc_segdil = (C3D_PATH + '/c3d ' + fn_segvol + ' -dilate 1 15x15x0vox'
+                   ' -o ' + fn_segvol_dil)
+    subprocess.call(strc_segdil,shell=True)  
+
+    # apply inverse transform to 3D segmentation and its mask to align 
+    # them with the original image
+    fn_segvol_rs = WDIR + '/seg_volume.nii.gz'
     strc_segvol_rs = (C3D_PATH + '/c3d -int 0 ' + fn_img_rot + ''
-                      ' ' + fn_segvol + ' -reslice-itk ' + fn_tform_inv + ''
+                      ' ' + fn_segvol + ' -reslice-matrix ' + fn_tform_inv + ''
                       ' -o ' + fn_segvol_rs)
     subprocess.call(strc_segvol_rs,shell=True)
+    
+    fn_segvol_mask_rs = WDIR + '/seg_volume_mask.nii.gz'
+    strc_segvol_mask_rs = (C3D_PATH + '/c3d -int 0 ' + fn_img_rot + ''
+                      ' ' + fn_segvol_dil + ' -reslice-matrix ' + fn_tform_inv + ''
+                      ' -o ' + fn_segvol_mask_rs)
+    subprocess.call(strc_segvol_mask_rs,shell=True)
     
     print('Total time: ', time.time()-start, 'seconds')
         
