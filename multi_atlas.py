@@ -79,7 +79,7 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
                       ' -multiply -o ' + fn_img_atlas_aff_rs)
     subprocess.call(str_mask_atlas,shell=True)
     
-    # deformable registration between the affineiinitialized atlas and target image
+    # deformable registration between the affine initialized atlas and target image
     fn_regout_deform = WDIR + '/deformation_atlas' + tag + '.nii.gz'
     str_def_atlas = (GREEDY_PATH + '/greedy -d 3 '
                         ' -i ' + fn_img_targ + '' 
@@ -116,6 +116,12 @@ if __name__ == "__main__":
     fn_coords_targ = sys.argv[3]
     fn_atlas_list = sys.argv[4]
     
+    fn_ws = sys.argv[1]
+    
+    strc_img_targ = (ITKSNAP_PATH + '/itksnap-wt -P -i ' + fn_ws + ''
+                     -llf )
+    fn_img_targ = 
+    
     # physical landmarks in target image
     #coords_targ = np.genfromtxt(fn_coords_targ,delimiter=',')
     #coords_targ = np.concatenate((np.transpose(coords_targ[:, 0:3:1]),
@@ -140,28 +146,30 @@ if __name__ == "__main__":
         str_atlas_labels_rs = str_atlas_labels_rs + ' ' + fn_seg_targ
     
     # atlas registration to generate candidate segmentations of target image
-    if (FLAG_MULTIPROC):
-        jobs = []
-        for i in range(0,len(atlas_set)):
-            p = mp.Process(target=atlas_registration, 
-                           args=(i,WDIR, fn_img_targ, coords_targ, atlas_set,))
-            jobs.append(p)
-            p.start()            
-        for p in jobs:
-            p.join()
-    else:
-        pool = mp.Pool(mp.cpu_count())
-        print("Number of processors: ", mp.cpu_count())
-        results = [pool.apply_async(atlas_registration, 
-                              args = (i, WDIR, fn_img_targ, coords_targ, atlas_set))
-                                for i in range(0,len(atlas_set))]
-        pool.close()
-        pool.join()
+    jobs = []
+    for i in range(0,len(atlas_set)):
+        p = mp.Process(target=atlas_registration, 
+                       args=(i,WDIR, fn_img_targ, coords_targ, atlas_set,))
+        jobs.append(p)
+        p.start()            
+    for p in jobs:
+        p.join()
     
-    # Without parallel processing...
-    #for i in range(0, len(atlas_set)):
-    #    atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set)
+    ''' 
+    # Parallel processing using a pool:
+    pool = mp.Pool(mp.cpu_count())
+    print("Number of processors: ", mp.cpu_count())
+    results = [pool.apply_async(atlas_registration, 
+                          args = (i, WDIR, fn_img_targ, coords_targ, atlas_set))
+                            for i in range(0,len(atlas_set))]
+    pool.close()
+    pool.join()
     
+    # Without parallel processing:
+    for i in range(0, len(atlas_set)):
+        atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set)
+    '''
+
     # joint label fusion to generate consensus segmentation of the target image
     fn_seg_consensus = WDIR + '/seg_atlas_consensus.nii.gz'
     str_jointfusion = (JLF_PATH + '/./jointfusion 3 1 -g' + str_atlas_img_rs + ''
