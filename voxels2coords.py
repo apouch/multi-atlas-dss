@@ -20,7 +20,7 @@ sform = img.get_sform()
 
 # voxel landmarks
 vox_targ = np.genfromtxt(fn_vox_targ)
-vox_targ = np.concatenate((np.transpose(vox_targ[:, 0:3:1]),np.ones((1,5))))
+vox_targ = np.concatenate((np.transpose(vox_targ[:, 0:3:1]),np.ones((1,5)))) - 1
 
 # physical landmarks
 coords_targ = np.transpose(np.matmul(sform,vox_targ))
