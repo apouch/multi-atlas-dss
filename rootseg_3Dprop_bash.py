@@ -11,9 +11,8 @@ import subprocess
 import multiprocessing as mp
 import time
 
-C3D_PATH = '/usr/local/bin'
+C3D_PATH = '/home/apouch/build/c3d-1.1.0/bin'
 GREEDY_PATH = '/usr/local/bin'
-SNAP_PATH = '/usr/local/bin'
 
 def slice_registration(i,WDIR,fn_seg_ref,stj_lev,vaj_lev,seg_lev):
     
@@ -100,9 +99,12 @@ if __name__ == "__main__":
     subprocess.call(strc_segvol,shell=True)
     
     # copy transform (header) from rotated image to segmentation
+    #strc_mbb = (C3D_PATH + '/c3d ' + fn_img_rot + ''
+    #		      ' ' + fn_segvol + ' -mbb -o ' + fn_segvol)
+    #subprocess.call(strc_mbb,shell=True)
+
     strc_copytform = (C3D_PATH + '/c3d ' + fn_img_rot + '' 
                       ' ' + fn_segvol + ' -copy-transform -o ' + fn_segvol)
-
     subprocess.call(strc_copytform,shell=True)
     
     # create a dilated mask of the rotated segmentation
