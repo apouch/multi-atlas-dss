@@ -45,7 +45,24 @@ python /home/apouch/multi_atlas_dss_repo/multi_atlas.py $WDIR $fn_img_rot $fn_lm
 
 fn_seg_rot=$WDIR/seg_atlas_consensus.nii.gz
 fn_seg_consensus=$WDIR/seg_final.nii.gz
-c3d $fn_img_rot $fn_seg_consensus -reslice-matrix $fn_tform_rot_inv -o $fn_seg_consensus
+c3d -int 0 $fn_img_rot $fn_seg_rot -reslice-matrix $fn_tform_rot_inv -o $fn_seg_consensus
+
+DIR_TMPL=$WDIR/template_initialization
+
+if [[ ! -d $DIR_TMPL ]]; then
+  mkdir -p $DIR_TMPL
+fi
+
+# FIX THESE FILENAMES!
+mov_id="template"
+fn_med=/data/picsl/apouch/mv_templates/medialtemplate_closed2.vtk
+fn_bnd=/data/picsl/apouch/mv_templates/medialtemplate_closed2.bnd.vtk
+fn_seg_tmpl=/data/picsl/apouch/mv_templates/medialtemplate_closed2.nii.gz
+fn_lm_tmpl=landmarks.csv
+
+python segreg_landmark_init.py $WDIR $fn_seg_rot $fn_lm_coords $fn_seg_tmpl $fn_lm_tmpl
+
+fn_reg=$WDIR/reg_seg.nii.gz
 
 RESULT_WSP=$WDIR/result.itksnap
 itksnap-wt -layers-set-main $fn_img \

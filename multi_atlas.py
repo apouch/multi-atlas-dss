@@ -14,7 +14,7 @@ import multiprocessing as mp
 
 C3D_PATH = '/usr/local/bin'
 GREEDY_PATH = '/usr/local/bin'
-JLF_PATH = '/home/gormanlab/build/ANTs/bin/jointfusion'
+JLF_PATH = '/home/gormanlab/build/ANTs/bin'
 
 def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
 
@@ -32,7 +32,7 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
     #coords_atlas = np.genfromtxt(fn_coords_atlas,delimiter=',')
     #coords_atlas = np.concatenate((np.transpose(coords_atlas[:, 0:3:1]),
     #                               np.ones((1,5))))
-    coords_atlas = pd.read_csv(fn_coords_atlas,header=None)
+    coords_atlas = pd.read_csv(fn_coords_atlas,header=None,delimiter=' ')
     coords_atlas = coords_atlas.to_numpy()
     coords_atlas = np.concatenate((np.transpose(coords_atlas[:, 0:3:1]),
                                  np.ones((1,5))))
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     #coords_targ = np.genfromtxt(fn_coords_targ,delimiter=',')
     #coords_targ = np.concatenate((np.transpose(coords_targ[:, 0:3:1]),
     #                             np.ones((1,5))))
-    coords_targ = pd.read_csv(fn_coords_targ,header=None)
+    coords_targ = pd.read_csv(fn_coords_targ,header=None,delimiter=' ')
     coords_targ = coords_targ.to_numpy()
     coords_targ = np.concatenate((np.transpose(coords_targ[:, 0:3:1]),
                                  np.ones((1,5))))
@@ -170,5 +170,5 @@ if __name__ == "__main__":
                        ' -m Joint[0.1,1] -rp 4x4x4 -rs 4x4x4' 
                        ' ' + fn_seg_consensus)
     print('This is the joint label fusion step')
-    #subprocess.call(str_jointfusion,shell=True)
+    subprocess.call(str_jointfusion,shell=True)
     
