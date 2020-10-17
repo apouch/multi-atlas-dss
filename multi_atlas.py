@@ -15,7 +15,6 @@ import multiprocessing as mp
 C3D_PATH = '/usr/local/bin'
 GREEDY_PATH = '/usr/local/bin'
 JLF_PATH = '/home/gormanlab/build/ANTs/bin/jointfusion'
-FLAG_MULTIPROC=True
 
 def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
 
@@ -115,12 +114,6 @@ if __name__ == "__main__":
     fn_img_targ = sys.argv[2]
     fn_coords_targ = sys.argv[3]
     fn_atlas_list = sys.argv[4]
-    
-    fn_ws = sys.argv[1]
-    
-    strc_img_targ = (ITKSNAP_PATH + '/itksnap-wt -P -i ' + fn_ws + ''
-                     -llf )
-    fn_img_targ = 
     
     # physical landmarks in target image
     #coords_targ = np.genfromtxt(fn_coords_targ,delimiter=',')
