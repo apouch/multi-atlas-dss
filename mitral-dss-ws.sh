@@ -2,6 +2,11 @@
 
 WS=$1
 WDIR=$2
+PATH_SCRIPTS=$3
+
+WM_PATH=/home/gormanlab/build/ANTs/bin
+CONTEST_PATH=/home/gormanlab/build/bcmrep
+CMREP_PATH=/home/gormanlab/build/cmrep
 
 fn_img=$(itksnap-wt -P -i $WS -llf "Rotated Image")
 tag_img=$(itksnap-wt -i $WS -lpbt "Rotated Image")
@@ -21,7 +26,7 @@ awk '/PC/ {print $4 " " $5 " " $6}' $fn_annot >> $fn_lm_vox
 awk '/MAL/ {print $4 " " $5 " " $6}' $fn_annot >> $fn_lm_vox
 
 fn_lm_coords=$WDIR/landmarks_coords.csv
-python /home/apouch/multi_atlas_dss_repo/voxels2coords.py $WDIR $fn_lm_vox $fn_img
+python $PATH_SCRIPTS/voxels2coords.py $WDIR $fn_lm_vox $fn_img
 
 fn_ws_tform=$WDIR/ws-tform.txt
 itksnap-wt -P -i $WS -lp $tag_img -props-get-transform > $fn_ws_tform
@@ -41,9 +46,10 @@ c3d $fn_img_rot $fn_img_rot -reslice-matrix $fn_tform_rot -o $fn_img_rot
 
 fn_atlas_list='/home/apouch/ATLASES_MV/nrml_mv_atlas_list.csv'
 
-python /home/apouch/multi_atlas_dss_repo/multi_atlas.py $WDIR $fn_img_rot $fn_lm_coords $fn_atlas_list
+python $PATH_SCRIPTS/multi_atlas.py $WDIR $fn_img_rot $fn_lm_coords $fn_atlas_list
 
 fn_seg_rot=$WDIR/seg_atlas_consensus.nii.gz
+
 fn_seg_consensus=$WDIR/seg_final.nii.gz
 c3d -int 0 $fn_img_rot $fn_seg_rot -reslice-matrix $fn_tform_rot_inv -o $fn_seg_consensus
 
@@ -53,22 +59,37 @@ if [[ ! -d $DIR_TMPL ]]; then
   mkdir -p $DIR_TMPL
 fi
 
-# FIX THESE FILENAMES!
-mov_id="template"
-fn_med=/data/picsl/apouch/mv_templates/medialtemplate_closed2.vtk
-fn_bnd=/data/picsl/apouch/mv_templates/medialtemplate_closed2.bnd.vtk
-fn_seg_tmpl=/data/picsl/apouch/mv_templates/medialtemplate_closed2.nii.gz
-fn_lm_tmpl=landmarks.csv
+fn_med=/home/apouch/CMREP_TEMPLATES/medialtemplate_closed2.vtk
+fn_bnd=/home/apouch/CMREP_TEMPLATES/medialtemplate_closed2.bnd.vtk
+fn_seg_tmpl=/home/apouch/CMREP_TEMPLATES/medialtemplate_closed2.nii.gz
+fn_lm_tmpl=/home/apouch/CMREP_TEMPLATES/medialtemplate_closed2_landmarks_coords.csv
 
-python segreg_landmark_init.py $WDIR $fn_seg_rot $fn_lm_coords $fn_seg_tmpl $fn_lm_tmpl
+python $PATH_SCRIPTS/seg_reg_wlm.py $DIR_TMPL $fn_seg_rot $fn_lm_coords $fn_seg_tmpl $fn_lm_tmpl
 
-fn_reg=$WDIR/reg_seg.nii.gz
+fn_reg=$DIR_TMPL/deformation_cmp.nii.gz
+c3d -mcs $fn_reg -oo $DIR_TMPL/deformation%02d.nii
+
+fn_warpmesh=$DIR_TMPL/tmpl_def_init.vtk
+$WM_PATH/warpmesh -w ants -m ras $fn_bnd $fn_warpmesh \
+	$DIR_TMPL/deformation00.nii $DIR_TMPL/deformation01.nii $DIR_TMPL/deformation02.nii
+
+fn_med_init=$DIR_TMPL/tmpl_med_init.vtk
+cd $DIR_TMPL
+$CONTEST_PATH/./contest -solver ma57 -lsq $fn_warpmesh $fn_warpmesh -o $fn_med_init
+bash $PATH_SCRIPTS/cmrep_swap_points.sh ${fn_med_init%.vtk}_fit2tmp_med.vtk $fn_med $DIR_TMPL/model.vtk
+bash $PATH_SCRIPTS/write_cmrep_param.sh $DIR_TMPL/model
+bash $PATH_SCRIPTS/write_cmrep_header.sh $DIR_TMPL/model
+
+$CMREP_PATH/cmrep_fit -m 2 \
+	$DIR_TMPL/model_param.txt \
+	$DIR_TMPL/model.cmrep \
+	$fn_seg_rot \
+	$DIR_TMPL/tmpfit
 
 RESULT_WSP=$WDIR/result.itksnap
-itksnap-wt -layers-set-main $fn_img \
-           -layers-set-seg $fn_seg_consensus \
-           -layers-add-anat $fn_img_rot \
+itksnap-wt -layers-set-main $fn_img_rot \
+           -layers-set-seg $fn_seg_rot \
            -o $RESULT_WSP
-itksnap-wt -i $RESULT_WSP -layers-pick 001 -props-set-transform $fn_tform_rot \
-           -registry-set Layers.Layer[000].LayerMetaData.DisplayMapping.SelectedComponent $sc \
-           -o $RESULT_WSP
+#itksnap-wt -i $RESULT_WSP -layers-pick 001 -props-set-transform $fn_tform_rot \
+#           -registry-set Layers.Layer[000].LayerMetaData.DisplayMapping.SelectedComponent $sc \
+#           -o $RESULT_WSP

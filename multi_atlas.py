@@ -93,7 +93,7 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
     fn_seg_targ = WDIR + '/seg_atlas' + tag + '_reslice.nii.gz'
     str_def_rs_seg = (GREEDY_PATH + '/greedy -d 3'
                       ' -rf ' + fn_img_targ + ''
-                      ' -ri NN'
+                      ' -ri LABEL 0.2vox'
                       ' -rm ' + fn_seg_atlas + ' ' + fn_seg_targ + ''
                       ' -r ' + fn_regout_deform  + ' ' + fn_affine_init)
     subprocess.call(str_def_rs_seg,shell=True)
