@@ -84,7 +84,8 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, atlas_set):
                         ' -i ' + fn_img_targ + '' 
                            ' ' + fn_img_atlas_aff_rs + ''
                         ' -m SSD '
-                        ' -n 100x100x50 '
+                        ' -n 80x80x30 '
+			' -s 3mm 1.5mm '
                         ' -gm ' + fn_mask_targ + ' '
                         ' -o ' + fn_regout_deform)
     subprocess.call(str_def_atlas,shell=True)
