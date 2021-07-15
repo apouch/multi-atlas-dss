@@ -66,7 +66,7 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, fn_mask_targ, atlas_se
     
     # affine initializion and masking of the atlas (moving) image
     fn_img_atlas_masked = WDIR + '/img_atlas' + tag + '_masked.nii.gz'
-    str_atlas_mask = (C3D_PATH '/c3d'
+    str_atlas_mask = (C3D_PATH + '/c3d'
                       ' ' + fn_img_atlas + ''
                       ' ' + fn_mask_atlas + ''
                       ' -multiply -o ' + fn_img_atlas_masked)
