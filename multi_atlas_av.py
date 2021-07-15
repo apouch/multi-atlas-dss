@@ -65,21 +65,28 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, fn_mask_targ, atlas_se
     subprocess.call(str_mask_targ,shell=True)
     
     # affine initializion and masking of the atlas (moving) image
+    fn_img_atlas_masked = WDIR + '/img_atlas' + tag + '_masked.nii.gz'
+    str_atlas_mask = (C3D_PATH '/c3d'
+                      ' ' + fn_img_atlas + ''
+                      ' ' + fn_mask_atlas + ''
+                      ' -multiply -o ' + fn_img_atlas_masked)
+    subprocess.call(str_atlas_mask,shell=True)
+    
     fn_img_atlas_aff_rs = WDIR + '/img_atlas' + tag + '_affine_reslice.nii.gz'
     str_aff_rs_atlas = (GREEDY_PATH + '/greedy -d 3'
                         ' -rf ' + fn_img_targ + ''
                         ' -ri LINEAR ' 
-                        ' -rm ' + fn_img_atlas + ' ' + fn_img_atlas_aff_rs + ''
+                        ' -rm ' + fn_img_atlas_masked + ' ' + fn_img_atlas_aff_rs + ''
                         ' -r ' + fn_affine_init)
     subprocess.call(str_aff_rs_atlas,shell=True)
     
-    str_mask_atlas = (C3D_PATH + '/c3d' 
-                      ' ' + fn_img_atlas_aff_rs + ''
-                      ' ' + fn_mask_targ + ''
-                      ' -multiply -o ' + fn_img_atlas_aff_rs)
-    subprocess.call(str_mask_atlas,shell=True)
+    #str_mask_atlas = (C3D_PATH + '/c3d' 
+    #                  ' ' + fn_img_atlas_aff_rs + ''
+    #                  ' ' + fn_mask_targ + ''
+    #                  ' -multiply -o ' + fn_img_atlas_aff_rs)
+    #subprocess.call(str_mask_atlas,shell=True)
     
-    # deformable registration between the affineiinitialized atlas and target image
+    # deformable registration between the affine initialized atlas and target image
     fn_regout_deform = WDIR + '/deformation_atlas' + tag + '.nii.gz'
     str_def_atlas = (GREEDY_PATH + '/greedy -d 3 '
                         ' -i ' + fn_img_targ + '' 
