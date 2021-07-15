@@ -171,5 +171,5 @@ if __name__ == "__main__":
                        ' -m Joint[0.1,1] -rp 4x4x4 -rs 4x4x4' 
                        ' ' + fn_seg_consensus)
     print('This is the joint label fusion step')
-    subprocess.call(str_jointfusion,shell=True)
+    #subprocess.call(str_jointfusion,shell=True)
     

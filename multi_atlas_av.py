@@ -115,7 +115,7 @@ if __name__ == "__main__":
     fn_img_targ = sys.argv[2]
     fn_coords_targ = sys.argv[3]
     fn_mask_targ = sys.argv[4]
-    fn_atlas_list = sys.argv[4]
+    fn_atlas_list = sys.argv[5]
     
     # physical landmarks in target image
     #coords_targ = np.genfromtxt(fn_coords_targ,delimiter=',')
