@@ -1,7 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 
-This script runs landmark-initialized multi-atlas segmentation of a target.
+This script runs landmark-initialized multi-atlas segmentation of the aortic valve and/or root.
+
+INPUT ARGUMENTS: 
+    WDIR is the working directory where intermediate/final data will be generated
+    fn_img_targ is the filename of the image to be segmented
+    fn_coords_targ is the filename of the csv file with physical coordinates of landmarks in the target image
+    fn_mask_targ is the filename of a binary mask image of an ROI around the structure to be segmented
+    fn_atlas_list is the csv file with the list of atlas filenames used for multi-atlas segmentation
 
 """
 
@@ -30,9 +37,6 @@ def atlas_registration(i, WDIR, fn_img_targ, coords_targ, fn_mask_targ, atlas_se
     fn_coords_atlas = atlas_set['fn_coords'][i]
 
     # physical coordinates in landmark image
-    #coords_atlas = np.genfromtxt(fn_coords_atlas,delimiter=',')
-    #coords_atlas = np.concatenate((np.transpose(coords_atlas[:, 0:3:1]),
-    #                               np.ones((1,5))))
     coords_atlas = pd.read_csv(fn_coords_atlas,header=None)
     coords_atlas = coords_atlas.to_numpy()
     coords_atlas = np.concatenate((np.transpose(coords_atlas[:, 0:3:1]),
@@ -125,9 +129,6 @@ if __name__ == "__main__":
     fn_atlas_list = sys.argv[5]
     
     # physical landmarks in target image
-    #coords_targ = np.genfromtxt(fn_coords_targ,delimiter=',')
-    #coords_targ = np.concatenate((np.transpose(coords_targ[:, 0:3:1]),
-    #                             np.ones((1,5))))
     coords_targ = pd.read_csv(fn_coords_targ,header=None)
     coords_targ = coords_targ.to_numpy()
     coords_targ = np.concatenate((np.transpose(coords_targ[:, 0:3:1]),
